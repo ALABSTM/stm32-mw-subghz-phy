@@ -368,11 +368,7 @@ ral_status_t ral_sx126x_reset( const void* context )
 ral_status_t ral_sx126x_init( const void* context )
 {
     ral_status_t                status = RAL_STATUS_ERROR;
-//    sx126x_tcxo_ctrl_voltages_t tcxo_supply_voltage;
     sx126x_reg_mod_t            reg_mode;
-//    bool                        dio2_is_set_as_rf_switch = false;
-//    ral_xosc_cfg_t              xosc_cfg;
-//    uint32_t                    startup_time_in_tick = 0;
     bool                        rx_boost_is_activated;
 
     status = ( ral_status_t ) sx126x_init_retention_list( context );
@@ -391,7 +387,6 @@ ral_status_t ral_sx126x_init( const void* context )
     }
 
     sx126x_set_buffer_base_address( context, 0x00, 0x00 );
-    //SUBGRF_SetTxParams( RFO_LP, 0, RADIO_RAMP_200_US );
 
     ral_sx126x_bsp_tx_cfg_output_params_t      tx_cfg_output_params;
     const ral_sx126x_bsp_tx_cfg_input_params_t tx_cfg_input_params = {

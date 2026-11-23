@@ -522,6 +522,34 @@ static void RadioTxPrbs( void );
 static void RadioTxCw( int8_t power );
 
 /*!
+ * \brief Configures the radio for both Tx and Rx using FSK modulation.
+ *
+ * \param [in] power        Tx output power in dBm.
+ * \param [in] fdev         Frequency deviation in Hz.
+ * \param [in] bandwidth    FSK receiver bandwidth in Hz.
+ * \param [in] datarate     FSK bit rate in bit/s.
+ * \param [in] modShaping   FSK modulation shaping.
+ * \param [in] preambleLen  Preamble length in bytes.
+ * \param [in] syncwordLen  Sync-word length in bytes.
+ * \param [in] syncword     Syncword to be set
+ * \param [in] fixLen       True for fixed-length packets.
+ * \param [in] crcOn        True to enable the two-byte CCITT CRC.
+ * \param [in] dcWhitening  DC-free coding mode.
+ * \param [in] iqInverted   IQ inversion setting.
+ * \param [in] tx_timeout   Tx timeout in ms.
+ * \param [in] rxContinuous True for continuous reception.
+ * \param [in] symbTimeout  Rx single timeout in bytes.
+ * \return 0 when no parameters error, -1 otherwise
+ */
+static void RadioSetFSKConfig( int8_t power, uint32_t fdev,
+                                  uint32_t bandwidth, uint32_t datarate,
+                                  RADIO_FSK_ModShapings_t modShaping, uint16_t preambleLen,
+                                  uint8_t syncwordLen,
+                                  uint8_t *syncword,
+                                  bool fixLen, bool crcOn, RADIO_FSK_DcFree_t dcWhitening, bool iqInverted, 
+                                  uint32_t tx_timeout, bool rxContinuous, uint32_t symbTimeout );
+
+/*!
  * \brief Sets the reception parameters
  *
  * \param [in] modem        Radio modem to be used [GENERIC_FSK or GENERIC_FSK]
@@ -674,7 +702,9 @@ const struct Radio_s Radio =
     RFW_ReceiveLongPacket,
     /* LrFhss extended radio functions */
     RadioLrFhssSetCfg,
-    RadioLrFhssGetTimeOnAirInMs
+    RadioLrFhssGetTimeOnAirInMs,
+    /* tx/rx FSK config */
+    RadioSetFSKConfig
 };
 
 const RadioLoRaBandwidths_t Bandwidths[] = { LORA_BW_125, LORA_BW_250, LORA_BW_500 };
@@ -1891,6 +1921,75 @@ static void RadioTxCw( int8_t power )
     SUBGRF_WriteRegister(REG_DRV_CTRL, 0x7 << 1);
     SUBGRF_SetSwitch( paselect, RFSWITCH_TX );
     SUBGRF_SetTxContinuousWave( );
+}
+
+static void RadioSetFSKConfig( int8_t power, uint32_t fdev,
+                                  uint32_t bandwidth, uint32_t datarate,
+                                  RADIO_FSK_ModShapings_t modShaping, uint16_t preambleLen,
+                                  uint8_t syncwordLen,
+                                  uint8_t *syncword,
+                                  bool fixLen, bool crcOn, RADIO_FSK_DcFree_t dcWhitening, bool iqInverted, 
+                                  uint32_t tx_timeout, bool rxContinuous, uint32_t symbTimeout )
+{
+#if (RADIO_GENERIC_CONFIG_ENABLE == 1)
+
+  RFW_DeInit( );
+  SubgRf.RxContinuous = ( rxContinuous == 0 ) ? false : true;
+  if( SubgRf.RxContinuous == true )
+  {
+    symbTimeout = 0;
+  }
+
+  //SUBGRF_SetStopRxTimerOnPreambleDetect( ( rxConfig->fsk.StopTimerOnPreambleDetect == 0 ) ? false : true );
+
+  SubgRf.ModulationParams.PacketType = PACKET_TYPE_GFSK;
+  SubgRf.ModulationParams.Params.Gfsk.BitRate = datarate;
+  SubgRf.ModulationParams.Params.Gfsk.ModulationShaping = ( RadioModShapings_t ) modShaping;
+  SubgRf.ModulationParams.Params.Gfsk.Bandwidth = SUBGRF_GetFskBandwidthRegValue( bandwidth );
+  SubgRf.ModulationParams.Params.Gfsk.Fdev = fdev;
+
+  SubgRf.PacketParams.PacketType = PACKET_TYPE_GFSK;
+  SubgRf.PacketParams.Params.Gfsk.PreambleLength = preambleLen << 3;
+  SubgRf.PacketParams.Params.Gfsk.PreambleMinDetect = RADIO_PREAMBLE_DETECTOR_08_BITS;
+  SubgRf.PacketParams.Params.Gfsk.SyncWordLength = syncwordLen << 3;
+  SubgRf.PacketParams.Params.Gfsk.AddrComp = RADIO_ADDRESSCOMP_FILT_OFF;
+  SubgRf.PacketParams.Params.Gfsk.HeaderType = ( fixLen == true ) ? RADIO_PACKET_FIXED_LENGTH : RADIO_PACKET_VARIABLE_LENGTH;
+  SubgRf.PacketParams.Params.Gfsk.PayloadLength = 0xFF;
+
+  if( crcOn == true )
+  {
+    SubgRf.PacketParams.Params.Gfsk.CrcLength = RADIO_CRC_2_BYTES_CCIT;
+  }
+  else
+  {
+    SubgRf.PacketParams.Params.Gfsk.CrcLength = RADIO_CRC_OFF;
+  }
+  
+  SubgRf.PacketParams.Params.Gfsk.DcFree = ( RadioDcFree_t ) dcWhitening;
+  SUBGRF_SetWhiteningSeed( 0x01FF );
+
+  /* ensure AGC configuration is the default one (in case of previous config for LoRa) */
+  SUBGRF_WriteRegister(SUBGHZ_AGCCFG,0x20);
+  SubgRf.RxTimeout = ( uint32_t )(( symbTimeout * 8 * 1000 ) /datarate);
+
+  RadioStandby( );
+  RadioSetModem( MODEM_FSK );
+  SUBGRF_SetModulationParams( &SubgRf.ModulationParams );
+  SUBGRF_SetPacketParams( &SubgRf.PacketParams );
+  
+  SUBGRF_SetSyncWord( syncword );
+        
+  //SUBGRF_SetCrcSeed( txConfig->fsk.CrcSeed );
+  //SUBGRF_SetCrcPolynomial( txConfig->fsk.CrcPolynomial );
+  SubgRf.RxTimeout = ( uint32_t )(( symbTimeout * 8 * 1000 ) /datarate);
+
+  SubgRf.AntSwitchPaSelect = SUBGRF_SetRfTxPower( power );
+  RFW_SetAntSwitch( SubgRf.AntSwitchPaSelect );
+  SubgRf.TxTimeout = tx_timeout;
+    
+  // Timeout Max, Rx Timeout handled directly in SetRx function
+  SubgRf.RxTimeout = 0xFFFF;
+#endif /* RADIO_GENERIC_CONFIG_ENABLE */
 }
 
 #if (RADIO_SIGFOX_ENABLE == 1)

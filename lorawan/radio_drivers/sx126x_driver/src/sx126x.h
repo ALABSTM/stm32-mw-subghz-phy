@@ -147,9 +147,6 @@ extern "C" {
 #define GFSK_RX_STATUS_ADRS_ERROR_POS ( 5U )
 #define GFSK_RX_STATUS_ADRS_ERROR_MASK ( 0x01UL << GFSK_RX_STATUS_ADRS_ERROR_POS )
 
-#define RFO_LP                                      1
-#define RFO_HP                                      2
-
 #define SMPS_CLK_DET_ENABLE ((uint8_t) (1<<6))
 
 #define SMPS_DRV_20  ((uint8_t) ((0x0)<<1))
@@ -228,6 +225,16 @@ typedef enum sx126x_reg_mods_e
 } sx126x_reg_mod_t;
 
 /**
+ * @brief SX126X power amplifier selection enumeration definition
+ */
+typedef enum sx126x_pa_select_e
+{
+    NONE   = 0,
+    RFO_LP = 1,
+    RFO_HP = 2,
+} sx126x_pa_select_t;
+
+/**
  * @brief SX126X power amplifier configuration parameters structure definition
  */
 typedef struct sx126x_pa_cfg_params_s
@@ -236,6 +243,7 @@ typedef struct sx126x_pa_cfg_params_s
     uint8_t hp_max;
     uint8_t device_sel;
     uint8_t pa_lut;
+    sx126x_pa_select_t pa_select;
 } sx126x_pa_cfg_params_t;
 
 /**

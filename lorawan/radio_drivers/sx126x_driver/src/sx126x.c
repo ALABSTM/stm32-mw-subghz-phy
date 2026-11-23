@@ -145,6 +145,8 @@ gfsk_bw_t gfsk_bw[] = {
  * --- PRIVATE VARIABLES -------------------------------------------------------
  */
 
+static sx126x_pa_cfg_params_t pa_cfg_params_set;
+
 /*
  * -----------------------------------------------------------------------------
  * --- PRIVATE FUNCTIONS DECLARATION -------------------------------------------
@@ -197,7 +199,9 @@ sx126x_status_t sx126x_init_irq( DioIrqHandler dioIrq )
 
 sx126x_status_t sx126x_init( DioIrqHandler dioIrq )
 {
-	uint8_t tmp    = 0;
+    uint8_t tmp    = 0;
+    memset(&pa_cfg_params_set, 0, sizeof(sx126x_pa_cfg_params_t));
+
     if ( dioIrq != NULL)
     {
         RadioOnDioIrqCb = dioIrq;
@@ -402,6 +406,7 @@ sx126x_status_t sx126x_cal_img_in_mhz( const void* context, const uint16_t freq1
 sx126x_status_t sx126x_set_pa_cfg( const void* context, const sx126x_pa_cfg_params_t* params )
 {
     uint8_t buf[4];
+    memcpy(&pa_cfg_params_set, params, sizeof(sx126x_pa_cfg_params_t));
 
     buf[0] = params->pa_duty_cycle;
     buf[1] = params->hp_max;
@@ -1282,11 +1287,9 @@ sx126x_status_t sx126x_set_ant_switch( bool is_tx_on )
 {
   RBI_Switch_TypeDef state = RBI_SWITCH_RX;
 
-  uint8_t paSelect= RFO_LP;
-
   if (is_tx_on)
   {
-      if (paSelect == RFO_LP)
+      if ((pa_cfg_params_set.pa_select == RFO_LP) || (pa_cfg_params_set.pa_select == NONE))
       {
           state = RBI_SWITCH_RFO_LP;
           if ( 1U == RBI_IsDCDC() )
@@ -1298,7 +1301,7 @@ sx126x_status_t sx126x_set_ant_switch( bool is_tx_on )
           }
 
       }
-      if (paSelect == RFO_HP)
+      if (pa_cfg_params_set.pa_select == RFO_HP)
       {
           state = RBI_SWITCH_RFO_HP;
       }

@@ -142,43 +142,40 @@ static inline void ral_sx126x_bsp_get_tx_cfg( const void* context, const ral_sx1
     output_params->pa_ramp_time  = RAMP_40_US;
     output_params->pa_cfg.pa_lut = 0x01;  // reserved value, same for sx1261 sx1262 and sx1268
 
-    //SetRfTxPower (power); without settxpower
-    uint8_t paSelect= RFO_LP;
+    int32_t TxConfig = RBI_GetTxConfig();
 
-	int32_t TxConfig = RBI_GetTxConfig();
+    int32_t max_power;
 
-	int32_t max_power;
+    switch (TxConfig)
+    {
+      case RBI_CONF_RFO_LP_HP:
+      {
+        if (power > 15)
+        {
+          output_params->pa_cfg.pa_select = RFO_HP;
+        }
+        else
+        {
+          output_params->pa_cfg.pa_select = RFO_LP;
+        }
+        break;
+      }
+      case RBI_CONF_RFO_LP:
+      {
+        output_params->pa_cfg.pa_select = RFO_LP;
+        break;
+      }
+      case RBI_CONF_RFO_HP:
+      {
+        output_params->pa_cfg.pa_select = RFO_HP;
+        break;
+      }
+      default:
+        break;
+    }
 
-	switch (TxConfig)
-	{
-		case RBI_CONF_RFO_LP_HP:
-		{
-			if (power > 15)
-			{
-				paSelect = RFO_HP;
-			}
-			else
-			{
-				paSelect = RFO_LP;
-			}
-			break;
-		}
-		case RBI_CONF_RFO_LP:
-		{
-			paSelect = RFO_LP;
-			break;
-		}
-		case RBI_CONF_RFO_HP:
-		{
-			paSelect = RFO_HP;
-			break;
-		}
-		default:
-			break;
-	}
-
-	//SetTxParams
-    if (paSelect == RFO_LP)
+	  //SetTxParams
+    if (output_params->pa_cfg.pa_select == RFO_LP)
     {
         max_power = RBI_GetRFOMaxPowerConfig(RBI_RFO_LP_MAXPOWER);
         if (power >  max_power)
@@ -255,7 +252,7 @@ static inline void ral_sx126x_bsp_get_tx_cfg( const void* context, const ral_sx1
         }
     }
     output_params->chip_output_pwr_in_dbm_configured = ( int8_t ) power;
-    output_params->chip_output_pwr_in_dbm_expected   = ( int8_t ) max_power;
+    output_params->chip_output_pwr_in_dbm_expected   = ( int8_t ) power;
 }
 
 /**

@@ -388,7 +388,7 @@ struct Radio_s
      *
      * \param [in] power Tx power in dBm
      */
-    void    ( *TxCw )( int8_t power );
+    void    ( *TxCw )( int8_t power );  
     /*!
      * \brief Sets the reception parameters
      *
@@ -457,6 +457,33 @@ struct Radio_s
      * \returns Time-on-air value in ms for LR-FHSS packet LrFhssGetTimeOnAirInMs
      */
     radio_status_t ( *LrFhssGetTimeOnAirInMs)( const radio_lr_fhss_time_on_air_params_t *params, uint32_t  *time_on_air_in_ms );
+    /*!
+     * \brief Configures the radio for both Tx and Rx using FSK modulation.
+     *
+     * \param [in] power        Tx output power in dBm.
+     * \param [in] fdev         Frequency deviation in Hz.
+     * \param [in] bandwidth    FSK receiver bandwidth in Hz.
+     * \param [in] datarate     FSK bit rate in bit/s.
+     * \param [in] modShaping   FSK modulation shaping.
+     * \param [in] preambleLen  Preamble length in bytes.
+     * \param [in] syncwordLen  Sync-word length in bytes.
+     * \param [in] syncword     Syncword to be set
+     * \param [in] fixLen       True for fixed-length packets.
+     * \param [in] crcOn        True to enable the two-byte CCITT CRC.
+     * \param [in] dcWhitening  DC-free coding mode.
+     * \param [in] iqInverted   IQ inversion setting.
+     * \param [in] tx_timeout   Tx timeout in ms.
+     * \param [in] rxContinuous True for continuous reception.
+     * \param [in] symbTimeout  Rx single timeout in bytes.
+     * \return 0 when no parameters error, -1 otherwise
+    */
+    void ( *SetFSKConfig) ( int8_t power, uint32_t fdev,
+                               uint32_t bandwidth, uint32_t datarate,
+                               RADIO_FSK_ModShapings_t modShaping, uint16_t preambleLen,
+                               uint8_t syncwordLen,
+                               uint8_t *syncword,
+                               bool fixLen, bool crcOn, RADIO_FSK_DcFree_t dcWhitening, bool iqInverted, 
+                               uint32_t tx_timeout, bool rxContinuous, uint32_t symbTimeout );
 };
 
 /*!

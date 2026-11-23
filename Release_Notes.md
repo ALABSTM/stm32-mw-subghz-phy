@@ -17,6 +17,33 @@ This driver is composed of the radio driver and radio interface under "stm32_rad
 
 # Update History
 
+<label for="collapse-section9" aria-hidden="true">__V1.5.2 / 23-Sep-2026__</label>
+<div>
+
+## Main Changes
+
+-Fix: Fixed Antenna switch selection issue causing low RF output power
+
+## Known limitations:
+
+None
+
+</div>
+
+<label for="collapse-section8" aria-hidden="true">__V1.5.1 / 18-Sep-2026__</label>
+<div>
+
+## Main Changes
+
+-Fix: Fixed Antenna switch selection issue causing low RF output power
+-Feature: Added FSK Tx/Rx radio configuration API to Legacy driver (SubGHz_Phy/radio_driver)
+
+## Known limitations:
+
+None
+
+</div>
+
 <label for="collapse-section7" aria-hidden="true">__V1.5.0 / 05-May-2026__</label>
 <div>
 
